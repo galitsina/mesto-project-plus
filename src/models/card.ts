@@ -10,12 +10,12 @@ interface ICard {
 
 const cardSchema = new Schema<ICard>({
   name: {type: String,
-        minLength: 2,
-        maxLength: 30,
-        required: true
+        minLength: [2, 'Минимальная длина поля - 2'],
+        maxLength: [30, 'Максимальная длина поля - 30'],
+        required: [true, 'Поле должно быть заполнено']
       },
   link: {type: String,
-        required: true,
+        required: [true, 'Поле должно быть заполнено'],
         match: /(https:\/\/www\.|http:\/\/www\.|https:\/\/|http:\/\/)?[a-zA-Z0-9]{2,}(\.[a-zA-Z0-9]{2,})(\.[a-zA-Z0-9]{2,})?/i
       },
   owner: {type: mongoose.Types.ObjectId,
@@ -26,6 +26,6 @@ const cardSchema = new Schema<ICard>({
         ref: "user"},
   createdAt: {type: Date,
               default: Date.now}
-});
+}, {versionKey: false});
 
 export const card = mongoose.model<ICard>('card', cardSchema);
