@@ -1,65 +1,82 @@
 import { Request, Response, NextFunction } from 'express';
-import { user } from  '../models/user';
-import { ISessionRequest } from 'middlewares/auth';
-import { BAD_QUERY_ERROR, NOT_FOUND_ERROR, SERVER_ERROR } from '../utils/const';;
+import { user } from '../models/user';
+import { ISessionRequest } from '../middlewares/auth';
+import { BAD_QUERY_ERROR, CREATED, NOT_FOUND_ERROR, SERVER_ERROR } from '../utils/const';
+import { RequestError } from '../utils/RequestError';
 // import bcryptjs from 'bcryptjs';
 // import jwt from 'jsonwebtoken';
 
-export const getUsers = (req: Request, res: Response) => {
-  return user.find({})
+export const getUsers = (req: Request, res: Response, next: NextFunction) => {
+  user.find({})
     .then(users => res.send(users))
-    .catch(err =>
-      res.status(SERVER_ERROR).send({ message: 'Произошла ошибка' }));
+    .catch(next);
 };
 
-export const getUser = (req: Request, res: Response) => {
+export const getUser = (req: Request, res: Response, next: NextFunction) => {
   const id = req.params.userId;
-  if(!id) {
-    return res.status(NOT_FOUND_ERROR).send({ message: 'Пользователь по указанному _id не найден' });
-  }
 
-  return user.findById(id)
-    .then(user => res.send(user))
-    .catch(err => res.status(SERVER_ERROR).send({ message: 'Произошла ошибка' }));
-}
+  user.findById(id)
+    .then((user) => {
+      if (user) {
+        res.send(user);
+      } else {
+        throw new RequestError(NOT_FOUND_ERROR, 'Пользователь по указанному _id не найден');
+      }
+    })
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        next(new RequestError(BAD_QUERY_ERROR, 'Переданы некорректные данные при поиске пользователя'));
+      } else {
+        next(err);
+      }
+    });
+};
 
-export const createUser = (req: Request, res: Response) => {
+export const createUser = (req: Request, res: Response, next: NextFunction) => {
   const { name, about, avatar } = req.body;
 
-  if(!name || !about || !avatar) {
-    return res.status(BAD_QUERY_ERROR).send({ message: 'Переданы некорректные данные при создании пользователя' });
-  }
-
-  return user.create({ name, about, avatar })
-    .then(user => res.send({ id: user._id }))
-    .catch(err => res.status(SERVER_ERROR).send({ message: 'Произошла ошибка' }));
-
+  user.create({ name, about, avatar })
+    .then(user => res.status(CREATED).send({ id: user._id }))
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        next(new RequestError(BAD_QUERY_ERROR, 'Переданы некорректные данные при создании пользователя'));
+      } else {
+        next(err);
+      }});
 };
 
-export const updateUser = (req: ISessionRequest, res: Response) => {
-  if(!req.body.name || !req.body.about) {
-    return res.status(BAD_QUERY_ERROR).send({ message: 'Переданы некорректные данные при обновлении профиля' });
-  }
-  if(!req.user?._id) {
-    return res.status(NOT_FOUND_ERROR).send({ message: 'Пользователь с указанным _id не найден' });
-  }
-
-  return user.findByIdAndUpdate(req.user?._id, {name: req.body.name, about: req.body.about}, { new: true })
-    .then(user => res.send({ id: user?._id }))
-    .catch(err => res.status(SERVER_ERROR).send({ message: 'Произошла ошибка' }));
+export const updateUser = (req: ISessionRequest, res: Response, next: NextFunction) => {
+  user.findByIdAndUpdate(req.user?._id, { name: req.body.name, about: req.body.about }, { new: true, runValidators: true })
+    .then((user) => {
+      if (user) {
+        res.send({ id: user?._id })
+      } else {
+        throw new RequestError(NOT_FOUND_ERROR, 'Пользователь с указанным _id не найден');
+      }
+      })
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        next(new RequestError(BAD_QUERY_ERROR, 'Переданы некорректные данные при обновлении профиля'));
+      } else {
+        next(err);
+      }});
 };
 
-export const updateAvatar = (req: ISessionRequest, res: Response) => {
-  if(!req.body.avatar) {
-    return res.status(BAD_QUERY_ERROR).send({ message: 'Переданы некорректные данные при обновлении аватара' });
-  }
-  if(!req.user?._id) {
-    return res.status(NOT_FOUND_ERROR).send({ message: 'Пользователь с указанным _id не найден' });
-  }
-
-  return user.findByIdAndUpdate(req.user?._id, {avatar: req.body.avatar}, { new: true })
-    .then(user => res.send({ id: user?._id }))
-    .catch(err => res.status(SERVER_ERROR).send({ message: 'Произошла ошибка' }));
+export const updateAvatar = (req: ISessionRequest, res: Response, next: NextFunction) => {
+  user.findByIdAndUpdate(req.user?._id, { avatar: req.body.avatar }, { new: true, runValidators: true })
+    .then((user) => {
+      if(user) {
+        res.send({ id: user?._id })
+      } else {
+        throw new RequestError(NOT_FOUND_ERROR, 'Пользователь с указанным _id не найден');
+      }})
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        next(new RequestError(BAD_QUERY_ERROR, 'Переданы некорректные данные при обновлении аватара'));
+      } else {
+        next(err);
+      }
+    });
 }
 
 // export const createUser = (req: Request, res: Response, next: NextFunction) => {
