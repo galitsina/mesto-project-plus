@@ -2,7 +2,7 @@ import { ErrorRequestHandler } from "express";
 
 export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   const { statusCode = 500, message } = err;
-  console.log(err.name)
+  console.log('Обработчик ошибок:', err.message, err.stack);
   res
     .status(statusCode)
     .send({

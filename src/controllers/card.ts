@@ -31,10 +31,11 @@ export const createCard = (req: ISessionRequest, res: Response, next: NextFuncti
       }});
 }
 
-export const deleteCard = (req: Request, res: Response, next: NextFunction) => {
-  const id = req.params.cardId;
+export const deleteCard = (req: ISessionRequest, res: Response, next: NextFunction) => {
+  const cardId = req.params.cardId;
+  const owner = req.user?._id;
 
-  card.findByIdAndRemove(id)
+  card.findOneAndDelete({_id: cardId, owner: owner})
     .then((card) => {
       if(card) {
         res.send(card);
