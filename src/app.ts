@@ -2,8 +2,11 @@ import express from 'express';
 import mongoose from 'mongoose';
 import userRouter from './routes/user';
 import cardRouter from './routes/card';
-import { ISessionRequest } from './middlewares/auth';
+import { authMiddleware } from './middlewares/auth';
 import { errorHandler } from './middlewares/errorMiddleware';
+import { createUser, login } from './controllers/user';
+import { requestLogger, errorLogger } from './middlewares/logger';
+import { celebrate, Joi, errors } from 'celebrate';
 
 const { PORT = 3000 } = process.env;
 const app = express();
@@ -11,20 +14,36 @@ const app = express();
 mongoose.connect('mongodb://localhost:27017/mestodb');
 
 app.use(express.json());
-app.use((req: ISessionRequest, res, next) => {
-  req.user = {
-    _id: '6571fb0831268df2dfd498ac'
-  };
-  next();
-})
 
+app.use(requestLogger);
+app.post('/signin', celebrate({
+  body: Joi.object().keys({
+    email: Joi.string().required().email(),
+    password: Joi.string().required().min(3),
+  })
+}),
+  login);
+app.post('/signup',
+  celebrate({
+    body: Joi.object().keys({
+      name: Joi.string().min(2).max(30),
+      about: Joi.string().min(2).max(200),
+      avatar: Joi.string().pattern(/(https:\/\/www\.|http:\/\/www\.|https:\/\/|http:\/\/)?[a-zA-Z0-9]{2,}(\.[a-zA-Z0-9]{2,})(\.[a-zA-Z0-9]{2,})?.*/i),
+      email: Joi.string().required().email(),
+      password: Joi.string().required().min(3),
+    })
+  }),
+  createUser);
+
+app.use(authMiddleware)
 app.use('/', userRouter);
 app.use('/', cardRouter);
 
-
+app.use(errorLogger);
+app.use(errors()); // обработчик ошибок celebrate
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-    console.log(`App listening on port ${PORT}`);
+  console.log(`App listening on port ${PORT}`);
 })
 
