@@ -13,12 +13,7 @@ export const getCards = (req: Request, res: Response, next: NextFunction) => {
 
 export const createCard = (req: ISessionRequest, res: Response, next: NextFunction) => {
   const { name, link } = req.body;
-
   const owner = req.user?._id;
-  if (!owner) {
-    next(new RequestError(BAD_QUERY_ERROR, 'Необходима авторизация'));
-    return;
-  }
   const likes: string[] = [];
 
   card.create({ name, link, owner, likes })
