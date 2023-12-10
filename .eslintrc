@@ -26,7 +26,15 @@
         "js": "never",
         "ts": "never"
       }
-    ],
-    "camelcase": ["error", { "ignore": ["_id"] }]
-  }
+    ]
+  },
+    "overrides": [
+      {
+        "files": ["*.js","*.ts"],
+        "rules": {
+          "no-underscore-dangle": ["error", { "allow": ["_id"] }]
+        }
+      }
+    ]
+
 }
