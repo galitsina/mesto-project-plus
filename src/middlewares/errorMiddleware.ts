@@ -1,14 +1,16 @@
-import { ErrorRequestHandler } from "express";
+import { ErrorRequestHandler, NextFunction } from 'express';
+import RequestError from '../utils/RequestError';
 
-export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+const errorHandler: ErrorRequestHandler = (err: RequestError, req, res, next: NextFunction) => {
   const { statusCode = 500, message } = err;
-  console.log('Обработчик ошибок:', err.message, err.stack);
   res
     .status(statusCode)
     .send({
       message: statusCode === 500
         ? 'На сервере произошла ошибка'
-        : message
+        : message,
     });
-}
+  next();
+};
 
+export default errorHandler;
