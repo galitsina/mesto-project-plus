@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { celebrate, Joi, errors } from 'celebrate';
 import userRouter from './routes/user';
@@ -7,9 +7,14 @@ import { authMiddleware } from './middlewares/auth';
 import errorHandler from './middlewares/errorMiddleware';
 import { createUser, login } from './controllers/user';
 import { requestLogger, errorLogger } from './middlewares/logger';
+import { NOT_FOUND_ERROR } from './utils/const';
 
 const { PORT = 3000 } = process.env;
 const app = express();
+const drop404 = (req: Request, res: Response, next: NextFunction) => {
+  res.status(NOT_FOUND_ERROR).send({ message: 'Запрашиваемый ресурс не найден' });
+  next();
+};
 
 mongoose.connect('mongodb://localhost:27017/mestodb');
 
@@ -43,6 +48,7 @@ app.post(
 app.use(authMiddleware);
 app.use('/', userRouter);
 app.use('/', cardRouter);
+app.use('/*', drop404);
 
 app.use(errorLogger);
 app.use(errors()); // обработчик ошибок celebrate
